@@ -1,23 +1,19 @@
-# First convert the video into frames
-#Second convert the frames into grayscale and store in db if it dpesnt exist
-#Finally matching the frames wrt brightest point value
-
 import cv2
 import os
 import shutil
 import numpy as np
 import base64
 
-def convert_frames(url:str):
+def convert_frames(url:str, rpath:str):
     capture = cv2.VideoCapture(url)
     frameNr = 0
     frames_url = []
     while (True):
     
         success, frame = capture.read()
-    
         if success:
-            file_to_write = f'D:/code/S1r/frames/frame_{frameNr}_S1EP4.jpg'
+            
+            file_to_write = rpath + '/frame_'+str(frameNr)+'_S1ep4.jpg'
             cv2.imwrite(file_to_write, frame)
             frames_url.append(file_to_write)
 
@@ -30,14 +26,18 @@ def convert_frames(url:str):
     capture.release()
     return frames_url
 
+
+
+
 def convert_grayscale_match(frames:list[str]):
-    destination_dir = 'D:/code/S1r/brightest_points'
 
     # Iterate over the images in the folder
-    matched_images = []
+    bright_points=[]
+    count=0
     for frame in frames:
         # Read the image
-        image = cv2.imread(os.path.join(frame,''))
+        image = cv2.imread(frame)
+        #print(image)
         # Convert the image to grayscale
         gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         
@@ -47,26 +47,54 @@ def convert_grayscale_match(frames:list[str]):
         # The brightest point will be the maximum value
         brightest_point = max_loc
         lowest_point = min_loc
-        print(brightest_point)
-        
-         # find brightest point in image
-        brightest_point_image = np.unravel_index(np.argmax(gray_image), gray_image.shape)
-        
-        # check if brightest points match
-        if brightest_point == brightest_point_image:
-            # save matching frame to output directory
-            #Note: try to highlight matched point if time permits
+        bright_points.append(brightest_point)
+        count=count+1
+    print("!!!!!!!!!!!!! the count of refernce frames", count)
+    return bright_points
+refv1='D:/code/S1r/s1ep4r.mp4'
+rpath='D:/code/S1r/frames'
+frames = convert_frames(refv1, rpath)
+images = convert_grayscale_match(frames)
+#print(images)
 
-            retval, buffer = cv2.imencode('.jpg', frame)
-            jpg_as_text = base64.b64encode(buffer)
-            matched_images.append(jpg_as_text)
+#Note: the brightest points from the refernce video should be stored in the database
+
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+def convert_grayscale_query(frames:list[str], ref_brightest_points: list[tuple], output_dir: str):
+    matched_images = []
+    for frame in frames:
+        # Read the image
+        image = cv2.imread(frame)
+        # Convert the image to grayscale
+        gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        
+        # Find the minimum and maximum values in the image
+        (min_val, max_val, min_loc, max_loc) = cv2.minMaxLoc(gray_image, mask=None)
+
+        # The brightest point will be the maximum value
+        brightest_point = max_loc
+        
+        # Check if brightest point matches any of the reference image's brightest points
+        for ref_brightest_point in ref_brightest_points:
+            if brightest_point == ref_brightest_point:
+                # Save matching frame to output directory
+                # Note: try to highlight matched point if time permits
+                output_file = os.path.join(output_dir, os.path.basename(frame))
+                cv2.imwrite(output_file, image)
+                
+                # Add the matched image to the list of matched images
+                retval, buffer = cv2.imencode('.jpg', image)
+                jpg_as_text = base64.b64encode(buffer)
+                matched_images.append(brightest_point)
+                break
 
     return matched_images
-    #      Draw a circle at the brightest point
-    #     cv2.circle(gray_image, brightest_point, radius=5, color=(0, 0, 0), thickness=10)
-    #     cv2.circle(gray_image, lowest_point, radius=5, color=(255, 255, 255), thickness=10)
-    #    image_extensions = ['.jpg', '.png', '.gif']  # list of allowed image file extensions
-    #     cv2.imwrite(os.path.join(destination_dir, filename), gray_image)
-frames = convert_frames('D:\code\S1r\s1ep4r.mp4')
-images = convert_grayscale_match(frames)
-print(images)
+
+qvd1='D:/code/S1q/s1ep4query.mp4'
+qpath='D:/code/S1q/frames'
+opath='D:/code/S1m'
+framesq = convert_frames(qvd1, qpath)
+imageq = convert_grayscale_query(framesq,images, opath)
+print("the matched images are",imageq)

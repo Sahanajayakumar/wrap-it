@@ -7,18 +7,27 @@ function YoutubeInput() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     try {
-      const response = await fetch('/api/youtube', {
-        method: 'POST',
+       await fetch('http://localhost:5000/', {
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ youtubeUrl })
-      });
+        // body: JSON.stringify({ youtubeUrl })
+      }).then(response => {
       if (response.ok) {
+        console.log(response.json)
         console.log('YouTube URL submitted successfully');
+        // <div className="App">
+        response.json().then(body => {
+          body.forEach((value, i) => {
+            return <img key={i} src={value} alt="can't show image" />;
+          })})    
+   
+      // </div>
       } else {
         console.error('Failed to submit YouTube URL');
       }
+    })
     } catch (error) {
       console.error('Failed to submit YouTube URL:', error);
     }

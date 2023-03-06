@@ -5,9 +5,10 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app)
 
-@app.route("/")
+@app.route("/", methods = ["POST"])
 def hello():
-    refv1='D:/code/S1r/s1ep4r.mp4'
+    url = request.json.get("url")
+    refv1=url
     rpath='D:/code/S1r/frames'
     frames = convert_frames(refv1, rpath)
     images = convert_grayscale_match(frames)

@@ -3,9 +3,13 @@ import os
 import shutil
 import numpy as np
 import base64
+from pytube import YouTube
 
 def convert_frames(url:str, rpath:str):
-    capture = cv2.VideoCapture(url)
+    yt = YouTube(url)
+    yt_stream = yt.streams.filter(file_extension='mp4').first()
+    video_file = yt_stream.download()
+    capture = cv2.VideoCapture(video_file)
     frameNr = 0
     frames_url = []
     while (True):
@@ -21,8 +25,6 @@ def convert_frames(url:str, rpath:str):
             break
     
         frameNr = frameNr+1
-        #print("Frame rate:", capture.get(cv2.CAP_PROP_FPS))
-        
     capture.release()
     return frames_url
 
@@ -53,8 +55,6 @@ def convert_grayscale_match(frames:list[str]):
 #Note: the brightest points from the refernce video should be stored in the database
 
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-
 def convert_grayscale_query(frames:list[str], ref_brightest_points: list[tuple], output_dir: str):
     matched_images = []
     for frame in frames:
@@ -72,15 +72,13 @@ def convert_grayscale_query(frames:list[str], ref_brightest_points: list[tuple],
         # Check if brightest point matches any of the reference image's brightest points
         for ref_brightest_point in ref_brightest_points:
             if brightest_point == ref_brightest_point:
-                # Save matching frame to output directory
                 # Note: try to highlight matched point if time permits
-                # output_file = os.path.join(output_dir, os.path.basename(frame))
-                # cv2.imwrite(output_file, image)
-                
-                # Add the matched image to the list of matched images
+                output_file = os.path.join(output_dir, os.path.basename(frame))
+                cv2.imwrite(output_file, image)
+                #Add the matched image to the list of matched images
+                count = count+1
                 retval, buffer = cv2.imencode('.jpg', image)
                 jpg_as_text = base64.b64encode(buffer).decode()
                 matched_images.append(jpg_as_text)
                 break
-
     return matched_images

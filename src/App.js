@@ -3,31 +3,27 @@ import './yt.css';
 
 function YoutubeInput() {
   const [youtubeUrl, setYoutubeUrl] = useState('');
+  const [images, setImages] = useState([]);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     try {
-       await fetch('http://localhost:5000/', {
-        method: 'GET',
+      const response = await fetch('http://localhost:5000/', {
+        method: 'POST',
         headers: {
+          'Accept': 'application/json',
           'Content-Type': 'application/json'
         },
-        // body: JSON.stringify({ youtubeUrl })
-      }).then(response => {
+        body: JSON.stringify({url: youtubeUrl})
+      });
+      
       if (response.ok) {
-        console.log(response.json)
+        const data = await response.json();
+        setImages(data);
         console.log('YouTube URL submitted successfully');
-        // <div className="App">
-        response.json().then(body => {
-          body.forEach((value, i) => {
-            return <img key={i} src={value} alt="can't show image" />;
-          })})    
-   
-      // </div>
       } else {
         console.error('Failed to submit YouTube URL');
       }
-    })
     } catch (error) {
       console.error('Failed to submit YouTube URL:', error);
     }
@@ -49,7 +45,7 @@ function YoutubeInput() {
             name="youtubeUrl"
             value={youtubeUrl}
             onChange={handleChange}
-            placeholder="https://www.youtube.com/watch?v=VIDEO_ID"
+            placeholder="Enter the url"
             required
           />
         </div>
@@ -57,8 +53,13 @@ function YoutubeInput() {
           <button type="submit">Submit</button>
         </div>
       </form>
+      <div className="image-container">
+        {images.map((image, index) => (
+          <img key={index} src={image} alt={`Image ${index}`} />
+        ))}
+      </div>
     </div>
   );
 }
 
-export default YoutubeInput;
+export default YoutubeInput;
